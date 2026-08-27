@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: bombman-server
+    runtime: node
+    region: oregon
+    buildCommand: cd server && npm install
+    startCommand: cd server && node src/index.js
+    envVars:
+      - key: CLIENT_URL
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: PORT
+        value: 3001
+    healthCheckPath: /health
