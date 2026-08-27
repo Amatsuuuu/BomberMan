@@ -102,7 +102,7 @@ const selectedMapName = computed(() => {
 
 onMounted(async () => {
   try {
-    const url = import.meta.env.DEV ? 'http://localhost:3001' : '';
+    const url = import.meta.env.DEV ? 'http://localhost:3001' : (import.meta.env.VITE_SERVER_URL || '');
     const res = await fetch(`${url}/maps`);
     maps.value = await res.json();
   } catch (e) {

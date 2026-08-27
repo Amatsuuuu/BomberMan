@@ -7,7 +7,7 @@ const connected = ref(false);
 export function useSocket() {
   if (socket.value) return socket.value;
 
-  const url = import.meta.env.DEV ? 'http://localhost:3001' : window.location.origin;
+  const url = import.meta.env.DEV ? 'http://localhost:3001' : (import.meta.env.VITE_SERVER_URL || window.location.origin);
 
   const s = io(url, {
     transports: ['polling', 'websocket'],
