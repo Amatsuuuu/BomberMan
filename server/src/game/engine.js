@@ -7,9 +7,9 @@ const TICK_MS = 1000 / TICK_RATE;
 const MOVE_INTERVAL_BASE = 150;
 const POWERUP_TYPES = [TILE.POWERUP_BOMB, TILE.POWERUP_RADIUS, TILE.POWERUP_SPEED, TILE.POWERUP_KICK, TILE.POWERUP_DETONATE];
 
-export function createGame(roomCode, playerEntries, mapId) {
+export function createGame(roomCode, playerEntries, mapId, nukeCount = 1) {
   const playerCount = playerEntries.length;
-  const { grid, nukePos, cols, rows } = createGrid(mapId, playerCount);
+  const { grid, nukePos, nukePositions, cols, rows } = createGrid(mapId, playerCount, nukeCount);
   const spawns = getSpawnPositions(playerCount, cols, rows);
 
   const players = new Map();
@@ -41,7 +41,8 @@ export function createGame(roomCode, playerEntries, mapId) {
     explosions: [],
     deaths: [],
     nukePos,
-    nukeRevealed: false,
+    nukePositions: nukePositions || (nukePos ? [nukePos] : []),
+    revealedNukes: new Set(),
     cols,
     rows,
     status: 'active',
@@ -105,9 +106,10 @@ function explodeBomb(state, bomb, now) {
   );
 
   for (const { x, y } of destroyedBlocks) {
-    if (state.nukePos && !state.nukeRevealed && x === state.nukePos.x && y === state.nukePos.y) {
+    const nukeIdx = state.nukePositions.findIndex(p => p.x === x && p.y === y);
+    if (nukeIdx !== -1 && !state.revealedNukes.has(nukeIdx)) {
       state.grid[y][x] = TILE.POWERUP_NUKE;
-      state.nukeRevealed = true;
+      state.revealedNukes.add(nukeIdx);
     } else {
       spawnPowerup(state.grid, x, y);
     }

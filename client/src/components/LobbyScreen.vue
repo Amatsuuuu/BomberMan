@@ -18,6 +18,16 @@
         </ul>
       </div>
 
+      <div v-if="roomStore.isHost" class="map-section">
+        <h3>Nukes on map</h3>
+        <div class="nuke-control">
+          <button class="btn nuke-btn" @click="nukeCount = Math.max(0, nukeCount - 1)">−</button>
+          <span class="nuke-value">{{ nukeCount }}</span>
+          <button class="btn nuke-btn" @click="nukeCount = Math.min(10, nukeCount + 1)">+</button>
+          <span class="nuke-hint">hidden randomly under blocks</span>
+        </div>
+      </div>
+
       <div v-if="roomStore.isHost && maps.length" class="map-section">
         <h3>Choose Map</h3>
         <div class="map-grid">
@@ -88,6 +98,7 @@ const myReady = ref(false);
 const voiceEnabled = ref(false);
 const maps = ref([]);
 const selectedMap = ref('classic');
+const nukeCount = ref(1);
 
 const allNonHostReady = computed(() => {
   const nonHost = roomStore.players.filter(p => p.id !== roomStore.hostId);
@@ -119,7 +130,7 @@ function toggleReady() {
 }
 
 function startGame() {
-  socket.emit('start-game', { mapId: selectedMap.value }, (res) => {
+  socket.emit('start-game', { mapId: selectedMap.value, nukeCount: nukeCount.value }, (res) => {
     if (res?.error) {
       error.value = res.error;
     }
@@ -260,6 +271,11 @@ h2 {
   margin-top: 2px;
 }
 .map-card.selected .map-desc { color: #bbb; }
+
+.nuke-control { display:flex; align-items:center; gap:10px; }
+.nuke-btn { width:36px; height:36px; padding:0; font-size:1.2rem; background:rgba(255,255,255,0.08); color:#fff; border:1px solid rgba(255,255,255,0.15); }
+.nuke-value { font-size:1.4rem; font-weight:700; color:#ff6b35; min-width:24px; text-align:center; }
+.nuke-hint { font-size:0.7rem; color:#888; }
 
 .map-info {
   text-align: center;

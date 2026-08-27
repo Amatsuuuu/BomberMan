@@ -68,7 +68,7 @@ io.on('connection', (socket) => {
     console.log(`[Room] ${playerName} joined room ${upperCode}`);
   });
 
-  socket.on('start-game', ({ mapId } = {}, cb) => {
+  socket.on('start-game', ({ mapId, nukeCount } = {}, cb) => {
     if (!cb) return;
     const room = getRoomBySocket(socket.id);
     if (!room) return cb({ error: 'Not in a room' });
@@ -79,7 +79,8 @@ io.on('connection', (socket) => {
     room.status = 'in_progress';
     updateRoomStatus(room.code, 'in_progress').catch(err => console.error('[DB] Failed to update status:', err.message));
 
-    const game = createGame(room.code, [...room.players.entries()], mapId || 'classic');
+    const parsedNukeCount = Math.max(0, Math.min(parseInt(nukeCount, 10) || 0, 10));
+    const game = createGame(room.code, [...room.players.entries()], mapId || 'classic', parsedNukeCount);
     games.set(room.code, game);
 
     game.onStateUpdate = (state) => {

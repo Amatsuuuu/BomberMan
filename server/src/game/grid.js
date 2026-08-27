@@ -252,7 +252,7 @@ export function getSpawnPositions(playerCount, cols, rows) {
   return allSpawns.slice(0, playerCount);
 }
 
-export function createGrid(mapId = 'classic', playerCount = 2) {
+export function createGrid(mapId = 'classic', playerCount = 2, nukeCount = 1) {
   const layout = MAP_LAYOUTS[mapId] || MAP_LAYOUTS.classic;
   const { cols, rows } = getGridDimensions(playerCount);
   const spawns = getSpawnPositions(playerCount, cols, rows);
@@ -290,14 +290,22 @@ export function createGrid(mapId = 'classic', playerCount = 2) {
     }
   }
 
-  if (floorTiles.length > 0) {
-    const idx = Math.floor(Math.random() * floorTiles.length);
-    const [nx, ny] = floorTiles[idx];
+  const count = Math.max(0, Math.min(Math.floor(nukeCount) || 0, floorTiles.length));
+  const nukePositions = [];
+  // shuffle floorTiles with Fisher-Yates then take first `count`
+  for (let i = floorTiles.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [floorTiles[i], floorTiles[j]] = [floorTiles[j], floorTiles[i]];
+  }
+  for (let i = 0; i < count; i++) {
+    const [nx, ny] = floorTiles[i];
     grid[ny][nx] = TILE.BLOCK;
-    return { grid, nukePos: { x: nx, y: ny }, cols, rows };
+    nukePositions.push({ x: nx, y: ny });
   }
 
-  return { grid, nukePos: null, cols, rows };
+  // legacy single field for backwards compat
+  const nukePos = nukePositions[0] || null;
+  return { grid, nukePos, nukePositions, cols, rows };
 }
 
 export function spawnPowerup(grid, x, y) {
