@@ -77,7 +77,6 @@ import { useSocket } from '../composables/useSocket.js';
 import { useRoomStore } from '../stores/room.js';
 import { useVoiceStore } from '../stores/voice.js';
 import { useWebRTC } from '../composables/useWebRTC.js';
-
 const router = useRouter();
 const socket = useSocket();
 const roomStore = useRoomStore();
