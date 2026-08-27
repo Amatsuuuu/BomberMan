@@ -10,7 +10,7 @@ Stack: `client/` = Vue 3 + Vite + Pinia + socket.io-client | `server/` = Node + 
 - Vercel and Render accounts
 
 ## 2. Deploy Backend to Render (uses `render.yaml:1`)
-1. Push to GitHub. In Render: New > Blueprint > connect repo (it reads `render.yaml:1`).
+1. Push to GitHub. In Render: New > Blueprint > connect repo (it reads `render.yaml:1`). **If you use Manual Web Service instead of Blueprint, leave `Root Directory` empty and set Build/Start manually — do NOT set it to `src`.**
 2. Set env vars in Render dashboard (or `render.yaml:9`):
    - `DATABASE_URL` = your Neon pooled URL
    - `CLIENT_URL` = your Vercel URL e.g. `https://bomber-man-six.vercel.app` (must match `server/src/index.js:20` cors origin)

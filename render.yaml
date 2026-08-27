@@ -4,8 +4,8 @@ services:
     runtime: node
     region: oregon
     rootDir: server
-    buildCommand: npm install
-    startCommand: node src/index.js
+    buildCommand: npm install --production=false
+    startCommand: npm start
     envVars:
       - key: CLIENT_URL
         sync: false
