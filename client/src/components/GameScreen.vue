@@ -309,6 +309,8 @@ function render() {
   const ctx = cvs.getContext('2d');
   const grid = gameStore.grid;
 
+  const cw = cvs.width;
+  const ch = cvs.height;
   if (!grid) {
     ctx.fillStyle = '#1a1a2e';
     ctx.fillRect(0, 0, cw, ch);
