@@ -3,14 +3,15 @@
     <div ref="boardWrap" class="board-wrap">
       <canvas ref="canvas"></canvas>
       <div class="bomb-layer">
-        <img
+        <div
           v-for="(bomb, i) in gameStore.bombs"
           :key="i + '-' + bomb.x + '-' + bomb.y"
-          :src="bombGif"
-          class="bomb-gif"
+          class="bomb-wrap"
           :style="bombStyle(bomb)"
-          draggable="false"
-        />
+        >
+          <img :src="bombGif" class="bomb-gif" draggable="false" />
+          <span v-if="bomb.isNuke" class="bomb-n-label">N</span>
+        </div>
       </div>
       <!-- Nuke explosion: single dramatic center effect (GIF animates via DOM) -->
       <div class="nuke-layer">
@@ -569,12 +570,36 @@ canvas {
   inset: 2px;
   pointer-events: none;
 }
+.bomb-wrap {
+  position: absolute;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 .bomb-gif {
   position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   object-fit: contain;
   image-rendering: auto;
   pointer-events: none;
   user-select: none;
+}
+.bomb-n-label {
+  position: relative;
+  z-index: 1;
+  color: #00ff88;
+  font-weight: 900;
+  font-size: 14px;
+  text-shadow: 0 0 6px #00ff88, 0 0 12px #00ff88, 0 1px 2px rgba(0,0,0,0.8);
+  line-height: 1;
+  animation: nukeGlow 0.9s ease-in-out infinite alternate;
+}
+@keyframes nukeGlow {
+  from { text-shadow: 0 0 6px #00ff88, 0 0 10px #00ff88; }
+  to { text-shadow: 0 0 12px #00ff88, 0 0 22px #00ff88, 0 0 30px #00ff88; }
 }
 .nuke-layer {
   position: absolute;
