@@ -356,16 +356,27 @@ function render() {
   // bombs are rendered as DOM <img> overlay (GIF animates natively, canvas drawImage would freeze on first frame)
 
   for (const explosion of gameStore.explosions) {
-    if (explosion.isNuke) continue; // nukes rendered as DOM overlay (GIF animates)
     const elapsed = Date.now() - explosion.createdAt;
     const alpha = Math.max(0, 1 - elapsed / explosion.duration);
-    for (const cell of explosion.cells) {
-      const px = cell.x * ts;
-      const py = cell.y * ts;
-      ctx.fillStyle = `rgba(255, 200, 0, ${alpha * 0.7})`;
-      ctx.fillRect(px, py, ts, ts);
-      ctx.fillStyle = `rgba(255, 100, 0, ${alpha * 0.5})`;
-      ctx.fillRect(px + 4, py + 4, ts - 8, ts - 8);
+    // Draw classic all-direction AOE for both normal and nuke (translucent for nuke so center GIF stays visible)
+    if (explosion.isNuke) {
+      for (const cell of explosion.cells) {
+        const px = cell.x * ts;
+        const py = cell.y * ts;
+        ctx.fillStyle = `rgba(0, 255, 136, ${alpha * 0.25})`;
+        ctx.fillRect(px, py, ts, ts);
+        ctx.fillStyle = `rgba(255, 180, 0, ${alpha * 0.35})`;
+        ctx.fillRect(px + 4, py + 4, ts - 8, ts - 8);
+      }
+    } else {
+      for (const cell of explosion.cells) {
+        const px = cell.x * ts;
+        const py = cell.y * ts;
+        ctx.fillStyle = `rgba(255, 200, 0, ${alpha * 0.7})`;
+        ctx.fillRect(px, py, ts, ts);
+        ctx.fillStyle = `rgba(255, 100, 0, ${alpha * 0.5})`;
+        ctx.fillRect(px + 4, py + 4, ts - 8, ts - 8);
+      }
     }
   }
 
