@@ -12,18 +12,16 @@
           draggable="false"
         />
       </div>
-      <!-- Nuke explosions: DOM overlay so nuke_explosion.gif animates (canvas drawImage freezes GIF) -->
+      <!-- Nuke explosion: single dramatic center effect (GIF animates via DOM) -->
       <div class="nuke-layer">
-        <template v-for="(exp, ei) in gameStore.explosions.filter(e => e.isNuke)" :key="ei + '-' + exp.createdAt">
-          <img
-            v-for="(cell, ci) in exp.cells"
-            :key="ei + '-' + ci"
-            :src="nukeExplosionGif"
-            class="nuke-gif"
-            :style="nukeStyle(cell, exp)"
-            draggable="false"
-          />
-        </template>
+        <img
+          v-for="(exp, ei) in gameStore.explosions.filter(e => e.isNuke)"
+          :key="ei + '-' + exp.createdAt"
+          :src="nukeExplosionGif"
+          class="nuke-gif"
+          :style="nukeCenterStyle(exp)"
+          draggable="false"
+        />
       </div>
     </div>
     <Hud />
@@ -270,14 +268,20 @@ function bombStyle(bomb) {
     height: s + 'px',
   };
 }
-function nukeStyle(cell, exp) {
+function nukeCenterStyle(exp) {
+  const cell = exp.cells[0];
+  if (!cell) return {};
   const elapsed = Date.now() - exp.createdAt;
-  const alpha = Math.max(0, 1 - elapsed / exp.duration);
+  // slower smoke fade: ease-out, lingers ~1.8x duration
+  const p = Math.min(1, elapsed / exp.duration);
+  const alpha = Math.pow(1 - p, 1.6); // slow fade at end
+  const scale = 5.5; // covers ~5-6 tiles dramatic center
+  const size = ts * scale;
   return {
-    left: cell.x * ts + 'px',
-    top: cell.y * ts + 'px',
-    width: ts + 'px',
-    height: ts + 'px',
+    left: cell.x * ts + ts / 2 - size / 2 + 'px',
+    top: cell.y * ts + ts / 2 - size / 2 + 'px',
+    width: size + 'px',
+    height: size + 'px',
     opacity: alpha,
   };
 }

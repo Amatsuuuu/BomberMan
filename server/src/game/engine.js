@@ -145,7 +145,7 @@ function explodeBomb(state, bomb, now) {
   state.explosions.push({
     cells: explosionCells,
     createdAt: now,
-    duration: bomb.isNuke ? 800 : 500,
+    duration: bomb.isNuke ? 2200 : 500,
     isNuke: !!bomb.isNuke,
   });
 
