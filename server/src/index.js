@@ -18,6 +18,10 @@ const app = express();
 const server = createServer(app);
 const io = new Server(server, {
   cors: { origin: [process.env.CLIENT_URL || 'http://localhost:5173', 'https://bomber-man-six.vercel.app'], methods: ['GET', 'POST'] },
+  pingInterval: 25000,
+  pingTimeout: 20000,
+  transports: ['websocket', 'polling'],
+  perMessageDeflate: { threshold: 1024 },
 });
 
 app.use(cors());

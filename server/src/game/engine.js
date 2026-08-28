@@ -2,7 +2,7 @@ import { createGrid, spawnPowerup, isWalkable, getSpawnPositions, TILE } from '.
 import { createBomb, calculateExplosion, processExplosion } from './bombs.js';
 import { applyPowerup } from './powerups.js';
 
-const TICK_RATE = 24;
+const TICK_RATE = 20;
 const TICK_MS = 1000 / TICK_RATE;
 const MOVE_INTERVAL_BASE = 150;
 const POWERUP_TYPES = [TILE.POWERUP_BOMB, TILE.POWERUP_RADIUS, TILE.POWERUP_SPEED, TILE.POWERUP_KICK, TILE.POWERUP_DETONATE];
@@ -66,6 +66,7 @@ export function stopGameLoop(state) {
   }
 }
 
+let _lastBroadcast = 0;
 function tick(state) {
   const now = Date.now();
   processBombs(state, now);
@@ -75,8 +76,21 @@ function tick(state) {
   state.explosions = state.explosions.filter(e => now - e.createdAt < e.duration);
   state.deaths = state.deaths.filter(d => now - d.createdAt < 2000);
 
-  if (state.onStateUpdate && state.status === 'active') {
-    state.onStateUpdate(serializeState(state));
+  if (state.onStateUpdate && state.status === 'active' && !state._pendingBroadcast) {
+    // throttle to tick rate, avoid double emit from explodeBomb in same tick
+    if (now - _lastBroadcast >= TICK_MS - 2) {
+      _lastBroadcast = now;
+      state.onStateUpdate(serializeState(state));
+    } else {
+      state._pendingBroadcast = true;
+      setTimeout(() => {
+        state._pendingBroadcast = false;
+        if (state.status === 'active' && state.onStateUpdate) {
+          _lastBroadcast = Date.now();
+          state.onStateUpdate(serializeState(state));
+        }
+      }, TICK_MS - (now - _lastBroadcast));
+    }
   }
 }
 
@@ -143,10 +157,7 @@ function explodeBomb(state, bomb, now) {
   }
 
   state.explosions = state.explosions.filter(e => now - e.createdAt < e.duration);
-
-  if (state.onStateUpdate) {
-    state.onStateUpdate(serializeState(state));
-  }
+  // broadcast is handled by tick loop to avoid duplicate emits
 }
 
 function processPlayers(state, now) {

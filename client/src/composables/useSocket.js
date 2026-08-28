@@ -10,10 +10,11 @@ export function useSocket() {
   const url = import.meta.env.DEV ? 'http://localhost:3001' : (import.meta.env.VITE_SERVER_URL || window.location.origin);
 
   const s = io(url, {
-    transports: ['polling', 'websocket'],
+    transports: ['websocket', 'polling'],
     reconnection: true,
-    reconnectionDelay: 1000,
-    reconnectionAttempts: 20,
+    reconnectionDelay: 500,
+    reconnectionAttempts: Infinity,
+    timeout: 20000,
   });
 
   s.on('connect', () => {

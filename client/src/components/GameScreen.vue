@@ -109,6 +109,8 @@ onMounted(async () => {
   isMobile.value = 'ontouchstart' in window;
   setupSignaling();
   setupInput();
+  updateCanvasSize();
+  window.addEventListener('resize', updateCanvasSize);
   renderLoop();
 
   const allSrcs = [...CHARACTER_SVGS, bombGif];
@@ -126,6 +128,7 @@ onUnmounted(() => {
   if (inputInterval) clearInterval(inputInterval);
   window.removeEventListener('keydown', onKeyDown);
   window.removeEventListener('keyup', onKeyUp);
+  window.removeEventListener('resize', updateCanvasSize);
 });
 
 function setupInput() {
@@ -230,17 +233,9 @@ async function toggleVoice() {
   }
 }
 
-function renderLoop() {
-  render();
-  animFrame = requestAnimationFrame(renderLoop);
-}
-
-function render() {
+function updateCanvasSize() {
   const cvs = canvas.value;
   if (!cvs) return;
-  const ctx = cvs.getContext('2d');
-  const grid = gameStore.grid;
-
   cols = gameStore.gridCols;
   rows = gameStore.gridRows;
   const maxW = window.innerWidth;
@@ -252,6 +247,18 @@ function render() {
     cvs.width = cw;
     cvs.height = ch;
   }
+}
+
+function renderLoop() {
+  render();
+  animFrame = requestAnimationFrame(renderLoop);
+}
+
+function render() {
+  const cvs = canvas.value;
+  if (!cvs) return;
+  const ctx = cvs.getContext('2d');
+  const grid = gameStore.grid;
 
   if (!grid) {
     ctx.fillStyle = '#1a1a2e';
@@ -396,58 +403,22 @@ function drawBomb(ctx, bomb) {
   const size = ts * 0.85 * pulse;
 
   if (isNuke) {
-    const glow = 0.5 + 0.5 * Math.sin(Date.now() * 0.006);
     ctx.save();
     ctx.translate(px + ts / 2, py + ts / 2);
-    ctx.shadowColor = '#00ff88';
-    ctx.shadowBlur = 12 * glow;
-    ctx.fillStyle = `rgba(0, 255, 136, ${0.25 * glow})`;
-    ctx.beginPath();
-    ctx.arc(0, 0, ts * 0.55, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.shadowBlur = 0;
     if (bombImage) {
       ctx.drawImage(bombImage, -size / 2, -size / 2, size, size);
     }
-    ctx.fillStyle = '#00ff88';
-    ctx.font = `bold ${Math.floor(ts * 0.3)}px sans-serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('N', 0, 0);
-    ctx.globalAlpha = 1;
     ctx.restore();
   } else if (bombImage) {
     ctx.save();
     ctx.translate(px + ts / 2, py + ts / 2);
     ctx.drawImage(bombImage, -size / 2, -size / 2, size, size);
-
-    const dangerAlpha = 0.3 + 0.7 * progress;
-    ctx.globalAlpha = dangerAlpha;
-    ctx.fillStyle = '#ff3300';
-    ctx.beginPath();
-    ctx.arc(0, 0, ts / 3 * pulse, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.globalAlpha = 1;
     ctx.restore();
   } else {
-    ctx.fillStyle = `rgba(40, 40, 40, ${pulse})`;
+    ctx.fillStyle = '#111';
     ctx.beginPath();
     ctx.arc(px + ts / 2, py + ts / 2, ts / 3, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = `rgba(255, ${Math.floor(100 * (1 - progress))}, 0, ${0.3 + 0.5 * (1 - progress)})`;
-    ctx.beginPath();
-    ctx.arc(px + ts / 2, py + ts / 2, ts / 3 * pulse, 0, Math.PI * 2);
-    ctx.fill();
-  }
-
-  if (!isNuke && progress > 0.7) {
-    const flash = Math.sin(Date.now() * 0.02) > 0;
-    if (flash) {
-      ctx.fillStyle = 'rgba(255, 50, 0, 0.3)';
-      ctx.beginPath();
-      ctx.arc(px + ts / 2, py + ts / 2, ts * 0.45, 0, Math.PI * 2);
-      ctx.fill();
-    }
   }
 }
 
