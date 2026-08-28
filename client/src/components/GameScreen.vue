@@ -12,6 +12,19 @@
           draggable="false"
         />
       </div>
+      <!-- Nuke explosions: DOM overlay so nuke_explosion.gif animates (canvas drawImage freezes GIF) -->
+      <div class="nuke-layer">
+        <template v-for="(exp, ei) in gameStore.explosions.filter(e => e.isNuke)" :key="ei + '-' + exp.createdAt">
+          <img
+            v-for="(cell, ci) in exp.cells"
+            :key="ei + '-' + ci"
+            :src="nukeExplosionGif"
+            class="nuke-gif"
+            :style="nukeStyle(cell, exp)"
+            draggable="false"
+          />
+        </template>
+      </div>
     </div>
     <Hud />
 
@@ -257,6 +270,17 @@ function bombStyle(bomb) {
     height: s + 'px',
   };
 }
+function nukeStyle(cell, exp) {
+  const elapsed = Date.now() - exp.createdAt;
+  const alpha = Math.max(0, 1 - elapsed / exp.duration);
+  return {
+    left: cell.x * ts + 'px',
+    top: cell.y * ts + 'px',
+    width: ts + 'px',
+    height: ts + 'px',
+    opacity: alpha,
+  };
+}
 
 function updateCanvasSize() {
   const cvs = canvas.value;
@@ -325,26 +349,16 @@ function render() {
   // bombs are rendered as DOM <img> overlay (GIF animates natively, canvas drawImage would freeze on first frame)
 
   for (const explosion of gameStore.explosions) {
+    if (explosion.isNuke) continue; // nukes rendered as DOM overlay (GIF animates)
     const elapsed = Date.now() - explosion.createdAt;
     const alpha = Math.max(0, 1 - elapsed / explosion.duration);
-    if (explosion.isNuke && nukeExplosionImage) {
-      ctx.save();
-      ctx.globalAlpha = alpha;
-      for (const cell of explosion.cells) {
-        const px = cell.x * ts;
-        const py = cell.y * ts;
-        ctx.drawImage(nukeExplosionImage, px, py, ts, ts);
-      }
-      ctx.restore();
-    } else {
-      for (const cell of explosion.cells) {
-        const px = cell.x * ts;
-        const py = cell.y * ts;
-        ctx.fillStyle = `rgba(255, 200, 0, ${alpha * 0.7})`;
-        ctx.fillRect(px, py, ts, ts);
-        ctx.fillStyle = `rgba(255, 100, 0, ${alpha * 0.5})`;
-        ctx.fillRect(px + 4, py + 4, ts - 8, ts - 8);
-      }
+    for (const cell of explosion.cells) {
+      const px = cell.x * ts;
+      const py = cell.y * ts;
+      ctx.fillStyle = `rgba(255, 200, 0, ${alpha * 0.7})`;
+      ctx.fillRect(px, py, ts, ts);
+      ctx.fillStyle = `rgba(255, 100, 0, ${alpha * 0.5})`;
+      ctx.fillRect(px + 4, py + 4, ts - 8, ts - 8);
     }
   }
 
@@ -553,6 +567,17 @@ canvas {
   position: absolute;
   object-fit: contain;
   image-rendering: auto;
+  pointer-events: none;
+  user-select: none;
+}
+.nuke-layer {
+  position: absolute;
+  inset: 2px;
+  pointer-events: none;
+}
+.nuke-gif {
+  position: absolute;
+  object-fit: cover;
   pointer-events: none;
   user-select: none;
 }
