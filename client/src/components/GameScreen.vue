@@ -1,6 +1,18 @@
 <template>
   <div class="game-container" @contextmenu.prevent>
-    <canvas ref="canvas"></canvas>
+    <div ref="boardWrap" class="board-wrap">
+      <canvas ref="canvas"></canvas>
+      <div class="bomb-layer">
+        <img
+          v-for="(bomb, i) in gameStore.bombs"
+          :key="i + '-' + bomb.x + '-' + bomb.y"
+          :src="bombGif"
+          class="bomb-gif"
+          :style="bombStyle(bomb)"
+          draggable="false"
+        />
+      </div>
+    </div>
     <Hud />
 
     <div v-if="!isMobile" class="powerup-legend" :class="{ collapsed: legendCollapsed }">
@@ -54,6 +66,7 @@ import bomberCyan from '../assets/bomber_cyan.svg';
 import bomberWhite from '../assets/bomber_white.svg';
 import bomberBlack from '../assets/bomber_black.svg';
 import bombGif from '../assets/bomb_animated.gif';
+import nukeExplosionGif from '../assets/nuke_explosion.gif';
 
 const CHARACTER_SVGS = [
   bomberRed, bomberBlue, bomberGreen, bomberYellow, bomberOrange,
@@ -81,6 +94,7 @@ let rows = 13;
 
 const loadedImages = {};
 let bombImage = null;
+let nukeExplosionImage = null;
 const characterMap = {};
 
 const TILE_COLORS = {
@@ -113,10 +127,11 @@ onMounted(async () => {
   window.addEventListener('resize', updateCanvasSize);
   renderLoop();
 
-  const allSrcs = [...CHARACTER_SVGS, bombGif];
+  const allSrcs = [...CHARACTER_SVGS, bombGif, nukeExplosionGif];
   const imgs = await Promise.all(allSrcs.map(src => loadImage(src)));
   allSrcs.forEach((src, i) => { loadedImages[src] = imgs[i]; });
   bombImage = loadedImages[bombGif];
+  nukeExplosionImage = loadedImages[nukeExplosionGif];
 
   buildCharacterMap(Object.keys(gameStore.players));
 
@@ -233,6 +248,16 @@ async function toggleVoice() {
   }
 }
 
+function bombStyle(bomb) {
+  const s = ts * 0.85;
+  return {
+    left: bomb.x * ts + (ts - s) / 2 + 'px',
+    top: bomb.y * ts + (ts - s) / 2 + 'px',
+    width: s + 'px',
+    height: s + 'px',
+  };
+}
+
 function updateCanvasSize() {
   const cvs = canvas.value;
   if (!cvs) return;
@@ -297,20 +322,29 @@ function render() {
     }
   }
 
-  for (const bomb of gameStore.bombs) {
-    drawBomb(ctx, bomb);
-  }
+  // bombs are rendered as DOM <img> overlay (GIF animates natively, canvas drawImage would freeze on first frame)
 
   for (const explosion of gameStore.explosions) {
     const elapsed = Date.now() - explosion.createdAt;
     const alpha = Math.max(0, 1 - elapsed / explosion.duration);
-    for (const cell of explosion.cells) {
-      const px = cell.x * ts;
-      const py = cell.y * ts;
-      ctx.fillStyle = `rgba(255, 200, 0, ${alpha * 0.7})`;
-      ctx.fillRect(px, py, ts, ts);
-      ctx.fillStyle = `rgba(255, 100, 0, ${alpha * 0.5})`;
-      ctx.fillRect(px + 4, py + 4, ts - 8, ts - 8);
+    if (explosion.isNuke && nukeExplosionImage) {
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      for (const cell of explosion.cells) {
+        const px = cell.x * ts;
+        const py = cell.y * ts;
+        ctx.drawImage(nukeExplosionImage, px, py, ts, ts);
+      }
+      ctx.restore();
+    } else {
+      for (const cell of explosion.cells) {
+        const px = cell.x * ts;
+        const py = cell.y * ts;
+        ctx.fillStyle = `rgba(255, 200, 0, ${alpha * 0.7})`;
+        ctx.fillRect(px, py, ts, ts);
+        ctx.fillStyle = `rgba(255, 100, 0, ${alpha * 0.5})`;
+        ctx.fillRect(px + 4, py + 4, ts - 8, ts - 8);
+      }
     }
   }
 
@@ -391,36 +425,7 @@ function drawPowerup(ctx, px, py, tile) {
   ctx.fillText(labels[tile] || '?', cx, cy);
 }
 
-function drawBomb(ctx, bomb) {
-  const px = bomb.x * ts;
-  const py = bomb.y * ts;
-  const elapsed = Date.now() - bomb.placedAt;
-  const progress = Math.min(1, elapsed / bomb.timer);
-  const isNuke = bomb.isNuke;
-  const pulse = isNuke
-    ? 0.8 + 0.2 * Math.sin(Date.now() * 0.018)
-    : 0.85 + 0.15 * Math.sin(Date.now() * 0.012);
-  const size = ts * 0.85 * pulse;
-
-  if (isNuke) {
-    ctx.save();
-    ctx.translate(px + ts / 2, py + ts / 2);
-    if (bombImage) {
-      ctx.drawImage(bombImage, -size / 2, -size / 2, size, size);
-    }
-    ctx.restore();
-  } else if (bombImage) {
-    ctx.save();
-    ctx.translate(px + ts / 2, py + ts / 2);
-    ctx.drawImage(bombImage, -size / 2, -size / 2, size, size);
-    ctx.restore();
-  } else {
-    ctx.fillStyle = '#111';
-    ctx.beginPath();
-    ctx.arc(px + ts / 2, py + ts / 2, ts / 3, 0, Math.PI * 2);
-    ctx.fill();
-  }
-}
+// drawBomb removed — bombs now rendered as DOM <img :src="bomb_animated.gif"> overlay so GIF animates (canvas drawImage freezes GIF to frame 0)
 
 function drawCharacter(ctx, id, p) {
   const px = p.x * ts;
@@ -528,10 +533,28 @@ function drawDeath(ctx, death) {
   background: #0f0c29;
   position: relative;
 }
+.board-wrap {
+  position: relative;
+  display: inline-block;
+  line-height: 0;
+}
 canvas {
   border: 2px solid rgba(255,255,255,0.1);
   border-radius: 4px;
   image-rendering: auto;
+  display: block;
+}
+.bomb-layer {
+  position: absolute;
+  inset: 2px;
+  pointer-events: none;
+}
+.bomb-gif {
+  position: absolute;
+  object-fit: contain;
+  image-rendering: auto;
+  pointer-events: none;
+  user-select: none;
 }
 .powerup-legend {
   position: fixed;

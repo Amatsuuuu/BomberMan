@@ -145,7 +145,8 @@ function explodeBomb(state, bomb, now) {
   state.explosions.push({
     cells: explosionCells,
     createdAt: now,
-    duration: 500,
+    duration: bomb.isNuke ? 800 : 500,
+    isNuke: !!bomb.isNuke,
   });
 
   const owner = state.players.get(bomb.ownerId);
@@ -300,6 +301,7 @@ function serializeState(state) {
       cells: e.cells,
       createdAt: e.createdAt,
       duration: e.duration,
+      isNuke: e.isNuke || false,
     })),
     deaths: state.deaths.map(d => ({
       x: d.x,
