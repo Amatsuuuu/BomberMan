@@ -1,14 +1,15 @@
 import { createApp } from 'vue';
 import { createPinia } from 'pinia';
-import { createRouter, createWebHistory } from 'vue-router';
+import { createRouter, createWebHistory, createWebHashHistory } from 'vue-router';
 import App from './App.vue';
 import LandingScreen from './components/LandingScreen.vue';
 import LobbyScreen from './components/LobbyScreen.vue';
 import GameScreen from './components/GameScreen.vue';
 import RoundEnd from './components/RoundEnd.vue';
 
+const isElectron = window.electronAPI?.isElectron || location.protocol === 'file:';
 const router = createRouter({
-  history: createWebHistory(),
+  history: isElectron ? createWebHashHistory() : createWebHistory(),
   routes: [
     { path: '/', component: LandingScreen },
     { path: '/lobby', component: LobbyScreen },
